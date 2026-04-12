@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Answer Key</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family:Arial;
+padding:20px;
+background:#f2f2f2;
+}
+
+.box{
+background:white;
+padding:15px;
+margin-bottom:15px;
+padding-bottom:60px;
+border-radius:10px;
+box-shadow:0px 0px 5px gray;
+position: relative;
+}
+
+.option{
+padding:8px;
+margin:5px 0;
+border-radius:5px;
+}
+
+/* Correct answer */
+.correct-option{
+background:#d4edda;
+color:green;
+font-weight:bold;
+}
+
+/* Wrong selected */
+.wrong-option{
+background:#f8d7da;
+color:red;
+font-weight:bold;
+}
+
+/* Icons */
+.icon{
+font-weight:bold;
+margin-left:10px;
+}
+
+.status{
+font-weight:bold;
+margin-top:10px;
+}
+.right-answers{
+position:absolute;
+bottom:10px;
+right:15px;
+text-align:right;
+font-size:13px;
+background:#eef2ff;
+padding:6px 10px;
+border-radius:6px;
+background:#e0e7ff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Answer Key</h2>
+
+{% for q in data %}
+
+<div class="box">
+
+<p><b>Q{{ loop.index }}. {{ q[2] }}</b></p>
+
+<!-- Options -->
+<div class="option 
+{% if q[3]==q[8] %}correct-option{% endif %}
+{% if q[3]==q[7] and q[7]!=q[8] %}wrong-option{% endif %}
+">
+A) {{ q[3] }}
+
+{% if q[3]==q[8] %}
+<span class="icon">✔</span>
+{% endif %}
+
+{% if q[3]==q[7] and q[7]!=q[8] %}
+<span class="icon">✖</span>
+{% endif %}
+
+</div>
+
+<div class="option 
+{% if q[4]==q[8] %}correct-option{% endif %}
+{% if q[4]==q[7] and q[7]!=q[8] %}wrong-option{% endif %}
+">
+B) {{ q[4] }}
+
+{% if q[4]==q[8] %}
+<span class="icon">✔</span>
+{% endif %}
+
+{% if q[4]==q[7] and q[7]!=q[8] %}
+<span class="icon">✖</span>
+{% endif %}
+
+</div>
+
+<div class="option 
+{% if q[5]==q[8] %}correct-option{% endif %}
+{% if q[5]==q[7] and q[7]!=q[8] %}wrong-option{% endif %}
+">
+C) {{ q[5] }}
+
+{% if q[5]==q[8] %}
+<span class="icon">✔</span>
+{% endif %}
+
+{% if q[5]==q[7] and q[7]!=q[8] %}
+<span class="icon">✖</span>
+{% endif %}
+
+</div>
+
+<div class="option 
+{% if q[6]==q[8] %}correct-option{% endif %}
+{% if q[6]==q[7] and q[7]!=q[8] %}wrong-option{% endif %}
+">
+D) {{ q[6] }}
+
+{% if q[6]==q[8] %}
+<span class="icon">✔</span>
+{% endif %}
+
+{% if q[6]==q[7] and q[7]!=q[8] %}
+<span class="icon">✖</span>
+{% endif %}
+
+</div>
+
+<!-- Summary -->
+<div class="right-answers">
+
+{% set user_opt = '' %}
+{% if q[7] == q[3] %}{% set user_opt = 'A' %}
+{% elif q[7] == q[4] %}{% set user_opt = 'B' %}
+{% elif q[7] == q[5] %}{% set user_opt = 'C' %}
+{% elif q[7] == q[6] %}{% set user_opt = 'D' %}
+{% endif %}
+
+{% set correct_opt = '' %}
+{% if q[8] == q[3] %}{% set correct_opt = 'A' %}
+{% elif q[8] == q[4] %}{% set correct_opt = 'B' %}
+{% elif q[8] == q[5] %}{% set correct_opt = 'C' %}
+{% elif q[8] == q[6] %}{% set correct_opt = 'D' %}
+{% endif %}
+
+{% if q[7]==q[8] %}
+<span style="color:green;">✔ Correct</span><br>
+Answer: {{ correct_opt }}
+{% else %}
+<span style="color:red;">✖ Wrong</span><br>
+Your Answer: {{ user_opt }} <br>
+Correct Answer: {{ correct_opt }}
+{% endif %}
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</body>
+</html>

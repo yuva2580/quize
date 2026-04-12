@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+display:flex;
+}
+
+/* Sidebar */
+.sidebar{
+width:220px;
+background:#1e293b;
+color:white;
+height:100vh;
+padding:20px;
+}
+
+.sidebar h2{
+text-align:center;
+margin-bottom:30px;
+}
+
+.sidebar a{
+display:block;
+color:white;
+padding:12px;
+text-decoration:none;
+margin:8px 0;
+border-radius:5px;
+cursor:pointer;
+}
+
+.sidebar a:hover{
+background:#334155;
+}
+
+/* Main */
+.main{
+flex:1;
+padding:30px;
+background:#f1f5f9;
+}
+
+/* Cards */
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+.card-container{
+display:flex;
+gap:20px;
+flex-wrap:wrap;
+}
+
+.box{
+flex:1;
+min-width:200px;
+text-align:center;
+}
+
+.box p{
+font-size:28px;
+font-weight:bold;
+color:#2575fc;
+}
+
+/* Sections */
+.section{
+display:none;
+}
+
+/* Popup */
+.popup{
+position:fixed;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px black;
+display:none;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+
+<h2>Admin Panel</h2>
+
+<a onclick="showSection('home')">🏠 Home</a>
+<a onclick="showSection('upload')">📤 Upload Questions</a>
+<a onclick="showSection('questions')">📋 View Questions</a>
+<a onclick="showSection('upload_users')">📤 Upload Users</a>
+<a onclick="showSection('users')">👥 View Users</a>
+<a onclick="showSection('settings')">⚙️ Exam Controls</a>
+<a onclick="showSection('leaderboard')">🏆 Leaderboard</a>
+<a onclick="releaseKey()">🔓 Release Key</a>
+<a onclick="resetExam()">🔄 Reset Exam</a>
+<a href="/answer_key">🔗 Answer Key Link</a>
+<a href="/logout">🚪 Logout</a>
+
+</div>
+
+<!-- Main -->
+<div class="main">
+
+    <h1>Welcome Admin</h1>
+
+    <!-- HOME -->
+    <div id="home" class="section">
+
+        <div class="card-container">
+
+            <div class="card box">
+             <h3>Total Students</h3>
+              <p id="total_students">0</p>
+            </div>
+
+            <div class="card box">
+                <h3>Attempted</h3>
+                <p id="attempted">0</p>
+            </div>
+
+            <div class="card box">
+                 <h3>Not Attempted</h3>
+                 <p id="not_attempted">0</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- UPLOAD -->
+    <div id="upload" class="section">
+
+        <div class="card">
+            <h3>Upload Questions</h3>
+
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".xlsx,.xls" required><br><br>
+                <button type="submit">Upload</button>
+            </form>
+
+        </div>
+            <!-- ✅ NOTE -->
+            <div style="background:#fff3cd; padding:10px; border-radius:6px; margin-top:15px; font-size:14px;">
+                ⚠️ <b>Important:</b><br>
+                • Upload only Excel files (.xlsx / .xls)<br>
+                • Required columns:<br>
+                &nbsp;&nbsp;<b>question, option1, option2, option3, option4, answer</b><br>
+                • Column names must be lowercase and no extra spaces<br>
+                • Answer must match exactly one of the options<br>
+                <p style="font-size:13px; margin-top:10px;">
+                Example:<br>
+                question | option1 | option2 | option3 | option4 | answer<br>
+                Capital of India | Delhi | Mumbai | Chennai | Kolkata | Delhi
+                </p>
+                <button onclick="downloadQuestionsSample()" style="margin-top:10px;">Download Sample Questions Excel file</button>
+            </div>
+
+
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div id="leaderboard" class="section">
+
+        <div class="card">
+            <h3>Leaderboard</h3>
+
+            <table border="1" width="100%">
+                <tr>
+                <th>Rank</th>
+                <th>Reg No</th>
+                <th>Score</th>
+                </tr>
+
+                 <tbody id="leaderboard_data"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- QUESTIONS -->
+    <div id="questions" class="section">
+
+        <div class="card">
+            <h3>Uploaded Questions</h3>
+            <button onclick="clearAllQuestions()" style="background:red;color:white;">
+            🗑 Clear All Questions
+            </button>
+
+            <table border="1" width="100%">
+                <tr>
+                    <th>ID</th>
+                    <th>Question</th>
+                    <th>Option A</th>
+                    <th>Option B</th>
+                    <th>Option C</th>
+                    <th>Option D</th>
+                </tr>
+
+                <tbody id="questions_data"></tbody>
+
+             </table>
+
+        </div>
+
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings" class="section">
+
+        <div class="card">
+            <h3>Exam control</h3>
+
+            <form id="settingsForm">
+
+                <label>Exam Time (MM:SS)</label><br>
+                <input type="text" name="time" placeholder="MM:SS (20:30)" required><br><br>
+
+                <label>No. of Questions</label><br>
+                <input type="number" name="questions" value="20" required><br><br>
+
+                <button type="submit">Update</button>
+
+            </form>
+            
+        </div>
+            <div class="card">
+
+                <button onclick="startExam()" style="background:green;color:white;">Start Exam</button>
+                <button onclick="stopExam()" style="background:red;color:white;margin-left:10px;">Stop Exam</button>
+            </div>
+
+    </div>
+
+    <!--user upload section-->
+    <div id="upload_users" class="section">
+
+        <div class="card">
+            <h3>Upload Users</h3>
+
+            <form id="userUploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" accept=".xlsx,.xls" required><br><br>
+                <button type="submit">Upload Users</button>
+            </form>
+
+        </div>
+            
+        <div style="background:#fff3cd; padding:10px; border-radius:6px; margin-top:15px; font-size:14px;">
+            ⚠️ <b>Important:</b><br>
+             • Upload only Excel files (.xlsx / .xls)<br>
+             • Required columns: <b>regno</b>, <b>password</b><br>
+             • Column names should be in lowercase and no extra spaces<br>
+             • Do not change column names<br>
+             • Example format:<br>
+                 regno | password<br>
+                 101 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| 1234<br>
+
+                <button onclick="downloadUsersSample()" style="margin-top:10px;"> Download Sample Users File</button> 
+        </div>
+
+    </div>
+
+    <!-- USERS -->
+    <div id="users" class="section">
+
+        <div class="card">
+            <h3>Users Details</h3>
+            <input type="text" id="userSearch" placeholder="Search by Reg No" onkeyup="searchUsers()" style="padding:8px; width: 200px; margin-bottom:10px;">
+
+            <table border="1" width="100%">
+                <tr>
+                    <th>ID</th>
+                    <th>Reg No</th>
+                    <th>Password</th>
+                    <th>Action</th>
+                </tr>
+
+                <tbody id="users_data"></tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+<!-- POPUP -->
+<div id="popup" class="popup"></div>
+
+<script>
+
+// SWITCH SECTION
+function showSection(id){
+
+document.querySelectorAll('.section').forEach(s => s.style.display='none');
+document.getElementById(id).style.display='block';
+
+if(id==='home') loadDashboard();
+if(id==='leaderboard') loadLeaderboard();
+if(id==='questions') loadQuestions();
+if(id==='users') loadUsers();
+
+}
+
+// DEFAULT
+showSection('home');
+
+// LOAD COUNTS
+function loadDashboard(){
+
+fetch('/dashboard_data')
+.then(res=>res.json())
+.then(data=>{
+document.getElementById("total_students").innerText=data.total;
+document.getElementById("attempted").innerText=data.attempted;
+document.getElementById("not_attempted").innerText=data.not_attempted;
+});
+
+}
+
+// UPLOAD
+document.getElementById("uploadForm").onsubmit=function(e){
+
+e.preventDefault();
+
+let formData=new FormData(this);
+
+fetch('/upload',{
+method:'POST',
+body:formData
+})
+.then(res=>res.text())
+.then(msg=>showPopup(" Questions Uploaded Successfully"));
+
+};
+
+// RELEASE KEY
+function releaseKey(){
+
+fetch('/release_key')
+.then(res=>res.text())
+.then(msg=>showPopup("🔓 Answer Key Released"));
+
+}
+
+// LOAD LEADERBOARD
+function loadLeaderboard(){
+
+fetch('/leaderboard_data')
+.then(res=>res.json())
+.then(data=>{
+
+let rows="";
+data.forEach((row,i)=>{
+rows+=`<tr>
+<td>${i+1}</td>
+<td>${row[0]}</td>
+<td>${row[1]}</td>
+</tr>`;
+});
+
+document.getElementById("leaderboard_data").innerHTML=rows;
+
+});
+
+}
+
+// POPUP
+function showPopup(msg){
+
+let popup=document.getElementById("popup");
+
+popup.innerHTML=msg;
+popup.style.display="block";
+
+setTimeout(()=>popup.style.display="none",2000);
+
+}
+// load questions
+function loadQuestions(){
+
+fetch('/view_questions')
+.then(res => res.json())
+.then(data => {
+
+let rows = "";
+
+data.forEach((q, i) => {
+
+rows += `<tr>
+<td>${q[0]}</td>
+<td>${q[1]}</td>
+<td>${q[2]}</td>
+<td>${q[3]}</td>
+<td>${q[4]}</td>
+<td>${q[5]}</td>
+<td><button onclick ="deleteQuetions(${q[0]})">Delete</button></td>
+</tr>`;
+
+});
+
+document.getElementById("questions_data").innerHTML = rows;
+
+});
+
+}
+function deleteQuetions(id){
+    if(confirm("Delete this question?")){
+
+        fetch('/delete_question/' + id)
+        .then(res => res.text())
+        .then(meg => {
+            showPopup("Question Deleted");
+            loadQuestions();
+        });
+    }
+}
+
+function clearAllQuestions(){
+    if(confirm("Delete all quetions?")){
+
+        fetch('/clear_questions')
+        .then(res => res.text())
+        .then(meg => {
+            showPopup("All Questions Deleted");
+            loadQuestions();
+        });
+    }
+}
+
+document.getElementById("settingsForm").onsubmit = function(e){
+
+e.preventDefault();
+
+let formData = new FormData(this);
+
+fetch('/update_settings',{
+method:'POST',
+body:formData
+})
+.then(res=>res.text())
+.then(msg=>showPopup("Settings Updated"));
+
+};
+
+// reset exam
+function resetExam(){
+    if(confirm("Reset the exam for all students?")){
+
+        fetch('/reset_exam')
+        .then(res => res.text())
+        .then(meg => {
+            showPopup("Exam Reset Successfully");
+            loadDashboard();
+        });
+    }
+}
+
+// upload users
+document.getElementById("userUploadForm").onsubmit=function(e){
+    e.preventDefault();
+    let formData=new FormData(this);
+
+    fetch('/upload_users',{
+        method:'POST',
+        body:formData
+    })
+    .then(res => res.text())
+    .then(msg => {
+        showPopup("Users uploaded successfully");
+    });
+};
+
+function downloadUsersSample(){
+    window.location.href = '/download_users_sample';
+}
+
+function downloadQuestionsSample(){
+    window.location.href = '/download_questions_sample';
+}
+
+function startExam(){
+    fetch('/start_exam')
+    .then(res=>res.text())
+    .then(msg=>showPopup("Exam Started"));
+}
+
+function stopExam(){
+    fetch('/stop_exam')
+    .then(res=>res.text())
+    .then(msg=>showPopup("Exam Stopped"));
+}
+let allUsers = [];
+function loadUsers(){
+    fetch('/view_users')
+    .then(res => res.json())
+    .then(data => {
+
+        allUsers = data; // Store all users for search
+        displayUsers(data); // Display all users initially
+
+    });
+}
+    function displayUsers(data){
+
+        let rows = "";
+
+        data.forEach(user => {
+
+            rows += `<tr>
+            <td>${user[0]}</td>
+            <td>${user[1]}</td>
+            <td>${user[2]}</td>
+            <td>
+                <button onclick ="deleteUser(${user[0]})">Delete</button></td>
+            </tr>`;
+
+        });
+
+        document.getElementById("users_data").innerHTML = rows;
+
+    }
+function searchUsers(){
+    let input = document.getElementById("userSearch").value.toLowerCase();
+    let filtered = allUsers.filter(user => user[1].toLowerCase().includes(input));
+    displayUsers(filtered);
+}
+
+function deleteUser(id){
+    if(confirm("Delete this user?")){
+
+        fetch('/delete_user/' + id)
+        .then(res => res.text())
+        .then(meg => {
+            showPopup("User Deleted");
+            loadUsers();
+        });
+    }
+}
+
+</script>
+
+
+</body>
+</html>

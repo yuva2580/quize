@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Online Assesment System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+    body{
+font-family:Arial, sans-serif;
+background:#f4f6f9;
+text-align:center;
+margin:0;
+padding:0;
+}
+
+.container{
+margin-top:100px;
+}
+
+h1{
+margin-bottom:50px;
+color:#333;
+}
+
+.card-container{
+display:flex;
+justify-content:center;
+gap:40px;
+}
+
+.card{
+background:white;
+padding:40px;
+width:200px;
+border-radius:10px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+text-decoration:none;
+color:#333;
+transition:0.3s;
+}
+
+.card:hover{
+transform:scale(1.05);
+background:#007BFF;
+color:white;
+}
+
+.card h2{
+margin-bottom:10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Learn & raise Team assessment</h1>
+<p> Topic: Time and Work, Simple Interest</p>
+
+<div class="card-container">
+
+<a href="/student_login" menthod="GET" class="card">
+<h2>Student</h2>
+<p>Attempt Assesment</p>
+</a>
+
+<a href="/admin_login" method="GET" class="card">
+<h2>MRKRS</h2>
+<p>Admin users</p>
+</a>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

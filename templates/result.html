@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Assesment Result</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+<style>
+
+body{
+font-family: Arial;
+background: linear-gradient(135deg,#4facfe,#00f2fe);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.result-box{
+background:white;
+padding:30px;
+border-radius:10px;
+width:350px;
+text-align:center;
+box-shadow:0 10px 20px rgba(0,0,0,0.2);
+}
+
+h2{
+color:#333;
+margin-bottom:20px;
+}
+
+.result-item{
+font-size:18px;
+margin:10px 0;
+padding:8px;
+border-bottom:1px solid #eee;
+}
+
+.correct{
+color:green;
+font-weight:bold;
+}
+
+.wrong{
+color:red;
+font-weight:bold;
+}
+
+.percentage{
+color:#007BFF;
+font-weight:bold;
+font-size:20px;
+}
+.home-btn{
+    display: inline-block;
+    padding:10px 20px;
+    background: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+.home-btn:hover{
+    background:#0056b3;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="result-box">
+
+<h2>Assessment Result</h2>
+
+<div class="result-item correct">
+Correct Answers: {{ correct }}
+</div>
+
+<div class="result-item wrong">
+Wrong Answers: {{ wrong }}
+</div>
+
+<div class="result-item">
+Total Questions: {{ total }}
+</div>
+
+<div class="result-item percentage">
+Percentage: {{ percentage }}%
+</div>
+
+<div class="result-item">
+Not Attempted: {{ not_attempt }}
+</div>
+<p>Thank you for attempting the quiz.</p>
+<a href="/" class="home-btn">Go to Home</a>
+
+</div>
+
+</body>
+
+</html>

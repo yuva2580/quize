@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Admin Login</title>
+
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial;
+}
+
+body{
+
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+
+background:linear-gradient(135deg,#667eea,#764ba2);
+
+}
+
+.login-container{
+
+background:white;
+padding:40px;
+border-radius:12px;
+width:350px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+text-align:center;
+
+animation:fadeIn 1s;
+
+}
+
+@keyframes fadeIn{
+
+from{
+opacity:0;
+transform:translateY(-20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+.login-container h2{
+
+margin-bottom:25px;
+color:#333;
+
+}
+
+.input-group{
+
+position:relative;
+margin-bottom:20px;
+
+}
+
+.input-group input{
+
+width:100%;
+padding:12px 40px;
+border-radius:8px;
+border:1px solid #ccc;
+outline:none;
+font-size:15px;
+
+}
+
+.input-group i{
+
+position:absolute;
+top:12px;
+left:12px;
+color:#888;
+
+}
+
+button{
+
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#667eea;
+color:white;
+font-size:16px;
+cursor:pointer;
+transition:0.3s;
+
+}
+
+button:hover{
+
+background:#5563d1;
+
+}
+
+.footer{
+
+margin-top:15px;
+font-size:13px;
+color:#777;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="login-container">
+
+<h2>Admin Login</h2>
+
+<form action="/admin_login" method="POST">
+
+<div class="input-group">
+<i class="fa fa-user"></i>
+<input type="text" name="username" placeholder="Admin Username" required>
+</div>
+
+<div class="input-group">
+<i class="fa fa-lock"></i>
+<input type="password" name="password" placeholder="Password" required>
+</div>
+
+<button type="submit">Login</button>
+
+</form>
+
+<div class="footer">
+Quiz Management System
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Quiz</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+
+body{
+font-family:Arial;
+background:#fff8e6;
+margin:40px;
+}
+
+.timer{
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+background: #ffebee;
+padding: 10px;
+text-align: center;
+font-size: 18px;
+font-weight: bold;
+color: rgb(30, 102, 237);
+z-index: 1000;
+}
+
+
+.question{
+background:white;
+padding:15px;
+margin-bottom:15px;
+border-radius:10px;
+box-shadow:0px 0px 5px gray;
+}
+
+button{
+padding:10px 20px;
+background:blue;
+color:white;
+border:none;
+font-size:16px;
+}
+.reg-box{
+    width: 300px;
+    margin: auto;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.reg-label{
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin: 8px;
+
+}
+.reg-input{
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    outline: none;
+    transition: 0.3s;
+}
+.reg-input:focus{
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgb(0,123,255,0.5);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Online Assesment</h2>
+<input type="hidden" name="autosubmit" id="autosubmit" value="0">
+
+<div class="timer">
+Time Left: <span id="timer">1200</span>
+</div>
+
+<form id="quizForm" method="POST" action="/submit" onsubmit="handleSubmit()">
+   
+{% for q in questions %}
+
+<div class="question">
+
+<p><b>Q{{ loop.index }}. {{q[1]}}</b></p>
+
+<input type="radio" name="{{q[0]}}" value="{{q[2]}}"> {{q[2]}} <br>
+
+<input type="radio" name="{{q[0]}}" value="{{q[3]}}"> {{q[3]}} <br>
+
+<input type="radio" name="{{q[0]}}" value="{{q[4]}}"> {{q[4]}} <br>
+
+<input type="radio" name="{{q[0]}}" value="{{q[5]}}"> {{q[5]}} <br>
+
+</div>
+
+{% endfor %}
+
+<button type="submit">Submit Quiz</button>
+
+</form>
+
+<script>
+
+let isSubmitting = false;
+
+// ✅ MANUAL SUBMIT (NO POPUP)
+function handleSubmit(){
+    isSubmitting = true;
+    window.onbeforeunload = null;
+}
+
+// ✅ WARNING ONLY IF USER TRIES TO REFRESH / CLOSE
+window.onbeforeunload = function(){
+    if (!isSubmitting){
+        return "Your test will be submitted if you leave!";
+    }
+};
+
+// ⏰ TIMER AUTO SUBMIT
+
+
+// ❌ TAB SWITCH AUTO SUBMIT
+document.addEventListener("visibilitychange", function(){
+
+    if(document.hidden && !isSubmitting){
+
+        alert("Tab switch detected! Test will be submitted.");
+
+        document.getElementById("autosubmit").value = "1";
+
+        isSubmitting = true;
+        window.onbeforeunload = null;
+
+        document.getElementById("quizForm").submit();
+    }
+
+});
+
+</script>
+<script id="a8d2kp">
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
+</script>
+<script>
+    var time = ("{{session['exam_time']}}");
+</script>
+<script>
+
+// ⏰ TIMER
+
+function formatTime(seconds){
+
+    let minutes = Math.floor(seconds / 60);
+    let secs = seconds % 60;
+
+    // add leading zero
+    if(secs < 10){
+        secs = "0" + secs;
+    }
+
+    if(minutes < 10){
+        minutes = "0" + minutes;
+    }
+
+    return minutes + ":" + secs;
+}
+
+// show initial time
+document.getElementById("timer").innerHTML = formatTime(time);
+
+let timer = setInterval(function(){
+
+    time--;
+
+    document.getElementById("timer").innerHTML = formatTime(time);
+
+    if(time <= 0){
+
+        clearInterval(timer);
+
+        document.getElementById("autosubmit").value = "1";
+
+        isSubmitting = true;
+        window.onbeforeunload = null;
+
+        document.getElementById("quizForm").submit();
+    }
+    if(time<=60){
+        document.getElementById("timer").style.color = "red";
+    }
+
+},1000);
+
+</script>
+
+</body>
+</html>
