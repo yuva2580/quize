@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = "Yuvaquiz"
 
 def get_db():
-    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    conn = psycopg2.connect("postgresql://quizeweb_app_user:MOu9MgPunvZKO5fOkY9gWBix9npIne8o@dpg-d7dmkn741pts73a4s9lg-a.ohio-postgres.render.com/quizeweb_app")
     return conn
 
 def init_db():
@@ -273,7 +273,7 @@ def upload_users():
     if 'admin' not in session:
         return redirect('/admin_login')
     
-    file= request.files['file']
+    file = request.files['file']
     df = pd.read_excel(file)
 
     df.columns = df.columns.str.strip().str.lower()
@@ -293,6 +293,9 @@ def upload_users():
 @app.route('/upload', methods=['POST'])
 def upload():
 
+    if 'admin' not in session:
+        return redirect('/admin_login')
+    
     file = request.files['file']
     df = pd.read_excel(file)
 
@@ -471,8 +474,8 @@ def reset_exam():
     conn=get_db()
     cursor=conn.cursor()
 
-    cursor.execute("TRUNCATE TABLE results RESTART INDENTITY")
-    cursor.execute("TRUNCATE TABLE answers RESTART INDENTITY")
+    cursor.execute("TRUNCATE TABLE results RESTART IDENTITY")
+    cursor.execute("TRUNCATE TABLE answers RESTART IDENTITY")
     conn.commit()
     conn.close()
 
@@ -587,3 +590,4 @@ def add_header(response):
 
 if __name__=="__main__":
     init_db()
+    app.run(debug=True)
