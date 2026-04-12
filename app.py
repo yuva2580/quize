@@ -1,6 +1,7 @@
 
 from flask import Flask, jsonify,render_template,request,redirect,session
-import sqlite3
+import psycopg2
+import os
 import pandas as pd
 import random
 
@@ -9,9 +10,8 @@ app = Flask(__name__)
 app.secret_key = "Yuvaquiz"
 
 def get_db():
-    conn = sqlite3.connect('database.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect("postgresql://quizeweb_app_user:MOu9MgPunvZKO5fOkY9gWBix9npIne8o@dpg-d7dmkn741pts73a4s9lg-a.ohio-postgres.render.com/quizeweb_app")
+    
 
 def init_db():
     conn = get_db()
@@ -19,7 +19,7 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         regno TEXT,
         password TEXT
     )
@@ -27,7 +27,7 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS questions(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         question TEXT,
         option1 TEXT,
         option2 TEXT,
@@ -39,7 +39,7 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS results(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         regno TEXT,
         score INTEGER,
         show_key INTEGER
@@ -48,7 +48,7 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS answers(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         regno TEXT,
         question TEXT,
         option1 TEXT,
@@ -62,21 +62,21 @@ def init_db():
 
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS settings(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         exam_time INTEGER,
         total_questions INTEGER,
         exam_active INTEGER
     )
     """)
     #default vales 
-    cursor.execute("INSERT OR IGNORE INTO settings (id,exam_time,total_questions,exam_active) VALUES(1,1200,20,0)")
+    cursor.execute("INSERT INTO settings (id,exam_time,total_questions,exam_active) VALUES(1,1200,20,0) ON CONFLICT (id) DO NOTHING")
 
     conn.commit()
     conn.close()
 
 @app.route('/')
 def dashboard():
-    return render_template("dashboard1.html")
+    return render_template("dashboard.html")
 
 @app.route('/get_settings')
 def get_settings():
@@ -109,7 +109,7 @@ def update_settings():
     conn=get_db()
     cursor=conn.cursor()
 
-    cursor.execute("""UPDATE settings SET exam_time=?,total_questions=? WHERE id=1""",(total_seconds,questions))
+    cursor.execute("""UPDATE settings SET exam_time=%s,total_questions=%s WHERE id=1""",(total_seconds,questions))
     conn.commit()
     conn.close()
 
@@ -161,7 +161,7 @@ def delete_question(id):
     if 'admin' not in session:
         return redirect('/admin_login')
 
-    cursor.execute("DELETE FROM questions WHERE id=?", (id,))
+    cursor.execute("DELETE FROM questions WHERE id=%s", (id,))
     conn.commit()
 
     return "Deleted"
@@ -175,9 +175,8 @@ def clear_questions():
     conn=get_db()
     cursor=conn.cursor()
 
-    cursor.execute("DELETE FROM questions")
-    cursor.execute("DELETE FROM sqlite_sequence WHERE name='questions'")
-
+    cursor.execute("TRUNCATE TABLE questions RESTART IDENTITY")
+    
     conn.commit()
     conn.close()
 
@@ -205,14 +204,14 @@ def register():
         conn=get_db()
         cursor=conn.cursor()
 
-        cursor.execute("SELECT * FROM users WHERE regno=?", (regno,))
+        cursor.execute("SELECT * FROM users WHERE regno=%s", (regno,))
         existing_user = cursor.fetchone()
 
         if existing_user:
             conn.close()
             return "User already exists"
         
-        cursor.execute("INSERT INTO users (regno, password) VALUES (?, ?)", (regno, password))
+        cursor.execute("INSERT INTO users (regno, password) VALUES (%s, %s)", (regno, password))
         conn.commit()
         conn.close()
 
@@ -230,10 +229,8 @@ def student_login():
         regno = request.form['regno'].strip()
         password = request.form['password'].strip()
 
-        print("Login:",regno,password)  # Debugging line
-
         # Check in database
-        cursor.execute("SELECT * FROM users WHERE regno=? AND password=?", (regno , password))
+        cursor.execute("SELECT * FROM users WHERE regno=%s AND password=%s", (regno , password))
         user=cursor.fetchone()
 
         if user:
@@ -285,7 +282,7 @@ def upload_users():
     cursor=conn.cursor()
 
     for i, row in df.iterrows():
-        cursor.execute("INSERT INTO users (regno, password) VALUES (?, ?)", (str(row['regno']), str(row['password'])))
+        cursor.execute("INSERT INTO users (regno, password) VALUES (%s, %s)", (str(row['regno']), str(row['password'])))
 
     conn.commit()
     conn.close()
@@ -308,7 +305,7 @@ def upload():
     for i, row in df.iterrows():
         cursor.execute("""
         INSERT INTO questions(question, option1, option2, option3, option4, answer)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             str(row['question']),
             str(row['option1']),
@@ -340,7 +337,7 @@ def quiz():
     if exam_active == 0:
         return "Exam Not Active Yet. Please Try Again Later. <a href='/'>Go Home</a>"
     
-    cursor.execute("SELECT * FROM results WHERE regno=?",(regno,))
+    cursor.execute("SELECT * FROM results WHERE regno=%s",(regno,))
     already = cursor.fetchone()
 
     if already:
@@ -404,7 +401,7 @@ def submit():
         else:
             wrong +=1
             
-        cursor.execute("""INSERT INTO answers(regno,question,option1,option2,option3,option4,user_answer,correct_answer) VALUES(?,?,?,?,?,?,?,?)""",
+        cursor.execute("""INSERT INTO answers(regno,question,option1,option2,option3,option4,user_answer,correct_answer) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)""",
                    (regno,question,o1,o2,o3,o4,user_answer,correct_ans))
         
           
@@ -413,12 +410,12 @@ def submit():
 
     total =len(questions)
     score = correct
-    percentage = round((score/total)*100,)
+    percentage = round((score/total)*100,2)
 
     conn=get_db()
     cursor=conn.cursor()
 
-    cursor.execute("INSERT INTO results (regno, score, show_key) VALUES (?,?,0)", (regno,score))
+    cursor.execute("INSERT INTO results (regno, score, show_key) VALUES (%s,%s,0)", (regno,score))
     conn.commit()
     conn.close()
 
@@ -449,7 +446,7 @@ def answer_key():
 
         regno = request.form['regno']
 
-        cursor.execute("SELECT show_key FROM results WHERE regno=?", (regno,))
+        cursor.execute("SELECT show_key FROM results WHERE regno=%s", (regno,))
         status = cursor.fetchone()
 
         if not status:
@@ -458,7 +455,7 @@ def answer_key():
         if status[0] == 0:
             return "Answer Key Not Released Yet"
 
-        cursor.execute("SELECT * FROM answers WHERE regno=?", (regno,))
+        cursor.execute("SELECT * FROM answers WHERE regno=%s", (regno,))
         data = cursor.fetchall()
 
         return render_template("answer_key_view.html", data=data)
@@ -474,10 +471,8 @@ def reset_exam():
     conn=get_db()
     cursor=conn.cursor()
 
-    cursor.execute("DELETE FROM results")
-    cursor.execute("DELETE FROM answers")
-    cursor.execute("DELETE FROM sqlite_sequence WHERE name='results'")
-    cursor.execute("DELETE FROM sqlite_sequence WHERE name='answers'")
+    cursor.execute("TRUNCATE TABLE results RESTART INDENTITY")
+    cursor.execute("TRUNCATE TABLE answers RESTART INDENTITY")
     conn.commit()
     conn.close()
 
@@ -570,7 +565,7 @@ def delete_user(id):
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM users WHERE id=?", (id,))
+    cursor.execute("DELETE FROM users WHERE id=%s", (id,))
     conn.commit()
     conn.close()
 
@@ -579,7 +574,7 @@ def delete_user(id):
 @app.route('/logout')
 def logout():
     session.clear()
-    return redirect('/admin_login')
+    return render_template('dashboard.html')
 
 
 @app.after_request
@@ -591,4 +586,5 @@ def add_header(response):
 
 
 if __name__=="__main__":
+    init_db()
     app.run(debug=True)
