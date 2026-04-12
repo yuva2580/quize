@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = "Yuvaquiz"
 
 def get_db():
-    conn = psycopg2.connect("postgresql://quizeweb_app_user:MOu9MgPunvZKO5fOkY9gWBix9npIne8o@dpg-d7dmkn741pts73a4s9lg-a.ohio-postgres.render.com/quizeweb_app")
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL")
     return conn
 
 def init_db():
@@ -590,4 +590,3 @@ def add_header(response):
 
 if __name__=="__main__":
     init_db()
-    app.run(debug=True)
