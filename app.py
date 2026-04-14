@@ -30,7 +30,7 @@ def send_otp_email(receiver_email, otp):
     msg['To'] = receiver_email
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=20)
         server.starttls()
         server.login(sender_email, app_password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
@@ -695,16 +695,24 @@ def quiz():
     cursor.execute("SELECT exam_active FROM settings WHERE id=1")
     exam_active = cursor.fetchone()[0]
     if exam_active == 0:
-        return "Exam Not Active Yet. Please Try Again Later. <a href='/'>Go Home</a>"
-    
+        return """
+        <script>
+        alert('Exam Not Active Yet. Please Try Again Later.');
+        window.location.href = '/';
+        </script>
+        """
+
     cursor.execute("SELECT * FROM results WHERE regno=%s",(regno,))
     already = cursor.fetchone()
 
     if already:
-        return "You have already attempted the Assesment. <a href='/'>Go Home</a>"
-    
-    
-    
+        return """
+        <script>
+        alert('You have already attempted the Assessment.');
+        window.location.href = '/';
+        </script>
+        """
+
     cursor.execute("SELECT * FROM questions")
     questions=[list(q) for q in cursor.fetchall()]
 
