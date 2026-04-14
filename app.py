@@ -1,9 +1,13 @@
-
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask import Flask, jsonify,render_template,request,redirect,session
 import psycopg2
 import os
 import pandas as pd
 import random
+import smtplib
+from email.mime.text import MIMEText
+
+
 
 
 app = Flask(__name__)
@@ -12,6 +16,30 @@ app.secret_key = "Yuvaquiz"
 def get_db():
     conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
     return conn
+
+def send_otp_email(receiver_email, otp):
+    sender_email =os.environ.get("EMAIL_USER")
+    app_password = os.environ.get("EMAIL_PASS")
+
+    subject = "Your OTP for Admin Registration"
+    body = f"Your OTP for admin registration is: {otp}"
+
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['FROM'] = sender_email
+    msg['To'] = receiver_email
+
+    try:
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, app_password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+        server.quit()
+        print("OTP email sent successfully")
+
+    except Exception as e:
+        print("Failed to send OTP email:", str(e))
+
 
 def init_db():
     conn = get_db()
@@ -70,6 +98,26 @@ def init_db():
     """)
     #default vales 
     cursor.execute("INSERT INTO settings (id,exam_time,total_questions,exam_active) VALUES(1,1200,20,0) ON CONFLICT (id) DO NOTHING")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS admins(
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        is_verified INTEGER DEFAULT 0
+    )
+    """)
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS admin_otps(
+        id SERIAL PRIMARY KEY,
+        email TEXT UNIQUE NOT NULL,
+        otp TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+                   
 
     conn.commit()
     conn.close()
@@ -209,9 +257,13 @@ def register():
 
         if existing_user:
             conn.close()
-            return "User already exists"
-        
-        cursor.execute("INSERT INTO users (regno, password) VALUES (%s, %s)", (regno, password))
+            return """<script>
+            alert('User with this registration number already exists');
+            window.location.href='/register';
+            </script>
+            """
+        hashed_password=generate_password_hash(password)
+        cursor.execute("INSERT INTO users (regno, password) VALUES (%s, %s)", (regno, hashed_password))
         conn.commit()
         conn.close()
 
@@ -220,14 +272,16 @@ def register():
 
 @app.route('/student_login', methods=['GET','POST'])
 def student_login():
-
-    conn=get_db()
+    conn=get_db()   
     cursor=conn.cursor()
+    
 
     if request.method == 'POST':
 
         regno = request.form['regno'].strip()
         password = request.form['password'].strip()
+        conn=get_db()
+        cursor=conn.cursor()
 
         # Check in database
         cursor.execute("SELECT * FROM users WHERE regno=%s AND password=%s", (regno , password))
@@ -239,26 +293,321 @@ def student_login():
             return redirect('/quiz')
         else:
             conn.close()
-            return "Invalid login"
-        
+            return """<script>
+            alert('Invalid login');
+            window.location.href='/student_login';
+            </script>
+            """
     conn.close()
     
     return render_template("student_login.html")
 
+
+@app.route('/admin_register', methods=['GET','POST'])
+def admin_register():
+
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        email = request.form['email'].strip()
+        password = request.form['password'].strip()
+
+        otp = str(random.randint(100000, 999999))
+
+        conn=get_db()
+        cursor=conn.cursor()
+
+        cursor.execute("SELECT * FROM admins WHERE username=%s OR email=%s", (username,email))
+        existing_user = cursor.fetchone()
+
+        if existing_user:
+            conn.close()
+            return """<script>
+            alert('Admin with this username or email already exists');
+            window.location.href='/admin_register';
+            </script>
+            """
+        
+
+        cursor.execute("DELETE FROM admin_otps WHERE email=%s", (email,))
+        cursor.execute("INSERT INTO admin_otps (email, otp) VALUES (%s, %s)", (email, otp))
+        conn.commit()
+        conn.close()
+
+        send_otp_email(email,otp)
+        hashed_password = generate_password_hash(password)
+
+        session['pending_admin'] ={
+            "username": username,
+            "email": email,
+            "password": hashed_password
+        }
+
+    
+
+        return """
+            <script>
+            alert('OTP sent successfully');
+            window.location.href='/verify_admin_otp';
+            </script>
+            """
+    
+    return render_template('admin_register.html')
+
+@app.route('/verify_admin_otp', methods=['GET','POST'])
+def verify_admin_otp():
+
+    if request.method == 'POST':
+        entered_otp = request.form['otp'].strip()
+        pending = session.get('pending_admin')
+
+        if not pending:
+            return """
+            <script>
+            alert('Session expired. Please register again');
+            window.location.href='/admin_register';
+            </script>
+            """
+
+
+        email = pending['email']
+
+        conn=get_db()
+        cursor=conn.cursor()
+
+        cursor.execute("""SELECT otp FROM admin_otps WHERE email=%s AND created_at > NOW() - INTERVAL '5 MINUTE' ORDER BY id DESC LIMIT 1""", (email,))
+        record = cursor.fetchone()
+
+        if not record:
+            conn.close()
+            return """
+            <script>
+            alert('OTP expired or invalid. Please register again');
+            </script>
+            """
+        
+        db_otp = record[0]
+
+        if record and entered_otp == db_otp:
+
+            cursor.execute("""INSERT INTO admins (username, email, password, is_verified) VALUES (%s, %s, %s, %s)""", (pending['username'], pending['email'], pending['password'], 1))
+            cursor.execute("DELETE FROM admin_otps WHERE email=%s", (email,))
+            conn.commit()
+            conn.close()
+    
+            session.pop('pending_admin', None)
+            return """
+            <script>   
+            alert('Admin registered successfully');
+            window.location.href='/admin_login';    
+            </script>
+            """
+        else:
+            conn.close()
+            return """<script>
+            alert('Invalid OTP. Please try again'); 
+            window.location.href='/verify_admin_otp';
+            </script>
+            """
+    
+    return render_template('verify_admin_otp.html')
 
 @app.route('/admin_login', methods= ['GET','POST'])
 def admin_login():
 
 
     if request.method == 'POST':
-        username=request.form['username']
-        password=request.form['password']
+        username=request.form['username'].strip()
+        password=request.form['password'].strip()
 
-        if username=="admin" and password=="admin@123":
+        conn=get_db()
+        cursor=conn.cursor()
+
+        cursor.execute("SELECT * FROM admins WHERE username=%s AND is_verified=%s", (username, 1))
+        admin=cursor.fetchone()
+        conn.close()
+
+        if admin and check_password_hash(admin[3],password):
             session['admin'] = username
             return redirect('/admin_dashboard')
+        else:
+            return """
+            <script>
+            aleert('Invalid login or account not verified');
+            window.location.href='/admin_login';
+            </script>
+            """
         
     return render_template('admin_login.html')
+
+@app.route('/admin_forgot_password', methods=['GET', 'POST'])
+def admin_forgot_password():
+    if request.method == 'POST':
+        email = request.form['email'].strip()
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM admins WHERE email=%s", (email,))
+        admin = cursor.fetchone()
+
+        if not admin:
+            conn.close()
+            return """
+            <script>
+            alert('Admin email not found');
+            window.location.href='/admin_forgot_password';
+            </script>"""
+
+        otp = str(random.randint(100000, 999999))
+
+        cursor.execute("DELETE FROM admin_otps WHERE email=%s", (email,))
+        cursor.execute(
+            "INSERT INTO admin_otps (email, otp) VALUES (%s, %s)",
+            (email, otp)
+        )
+        conn.commit()
+        conn.close()
+
+        send_otp_email(email, otp)
+
+        session['reset_email'] = email
+        return """
+        <script>
+         alert('OTP sent successfully');
+         window.location.href='/verify_reset_otp';
+        </script>
+        """
+
+    return render_template("admin_forgot_password.html")
+
+@app.route('/verify_reset_otp', methods=['GET', 'POST'])
+def verify_reset_otp():
+    if request.method == 'POST':
+        entered_otp = request.form['otp'].strip()
+        email = session.get('reset_email')
+
+        if not email:
+            return """
+            <script>
+            alert('Session expired. Please try again');
+            window.location.href='/admin_forgot_password';
+            </script>
+            """
+
+        conn = get_db()
+        cursor = conn.cursor()
+
+        cursor.execute("""SELECT otp FROM admin_otps WHERE email=%s AND created_at > NOW() - INTERVAL '5 MINUTE' ORDER BY id DESC LIMIT 1""", (email,))
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            return """<script>
+            alert('OPT not found');
+            window.location.href='/admin_forgot_password';
+            </script>"""
+
+        db_otp = row[0]
+
+        if entered_otp == db_otp:
+            conn.close()
+            session['otp_verified'] = True
+            return """
+            <script>
+            alert('OTP verified successfully');
+            window.location.href='/admin_reset_password';
+            </script>
+            """
+        else:
+            conn.close()
+            return """
+            <script>
+            alert('Invalid OTP');
+            window.location.href='/verify_reset_otp';
+            </script>
+            """
+
+    return render_template("verify_reset_otp.html")
+
+@app.route('/admin_reset_password', methods=['GET', 'POST'])
+def admin_reset_password():
+    email = session.get('reset_email')
+    otp_verified = session.get('otp_verified')
+
+    if not email or not otp_verified:
+        return """
+        <script>
+        alert('Unauthorized access');
+        window.location.href='/admin_forgot_password';
+        </script>
+        """
+
+    if request.method == 'POST':
+        new_password = request.form['new_password'].strip()
+        confirm_password = request.form['confirm_password'].strip()
+
+        if new_password != confirm_password:
+            return """
+            <script>
+            alert('Passwords do not match');
+            window.location.href='/admin_reset_password';
+            </script>
+            """
+
+        conn = get_db()
+        cursor = conn.cursor()
+        hashed_password = generate_password_hash(new_password)
+
+        cursor.execute("UPDATE admins SET password=%s WHERE email=%s",(hashed_password, email))
+
+        cursor.execute("DELETE FROM admin_otps WHERE email=%s", (email,))
+        conn.commit()
+        conn.close()
+
+        session.pop('reset_email', None)
+        session.pop('otp_verified', None)
+
+        return """
+            <script>
+            alert('Password updated successfully');
+            window.location.href='/admin_login';
+            </script>
+            """
+
+    return render_template("admin_reset_password.html")
+
+@app.route('/resend_otp')
+def resend_otp():
+    pending = session.get('pending_admin')
+    email = session.get('reset_email') or (pending['email'] if pending else None)
+
+    if not email:
+        return """
+        <script>
+        alert('Session expired');
+        window.location.href='/admin_register';
+        </script>
+        """
+
+    otp = str(random.randint(100000, 999999))
+
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM admin_otps WHERE email=%s", (email,))
+    cursor.execute("INSERT INTO admin_otps (email, otp) VALUES (%s, %s)", (email, otp))
+
+    conn.commit()
+    conn.close()
+
+    send_otp_email(email, otp)
+
+    return """
+    <script>
+    alert('OTP resent successfully');
+    window.history.back();
+    </script>
+    """
 
 @app.route('/admin_dashboard')
 def admin_dashboard():
@@ -589,4 +938,8 @@ def add_header(response):
 
 
 if __name__=="__main__":
+<<<<<<< HEAD
     init_db()
+=======
+    init_db()
+>>>>>>> 9d0b51f (update code)

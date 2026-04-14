@@ -2,49 +2,117 @@
 <html>
 <head>
 
-<title>Student Registration</title>
+<title>student registration</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 
 <style>
 
-body{
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
 font-family:Arial;
+}
+
+body{
+
 height:100vh;
 display:flex;
 justify-content:center;
 align-items:center;
-background:linear-gradient(120deg,#6a11cb,#2575fc);
+
+background:linear-gradient(135deg,#667eea,#764ba2);
+
 }
 
-.login-box{
+.login-container{
+
 background:white;
 padding:40px;
-border-radius:10px;
-width:300px;
-box-shadow:0 10px 25px rgba(0,0,0,0.2);
+border-radius:12px;
+width:350px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
 text-align:center;
+
+animation:fadeIn 1s;
+
 }
 
-input{
+@keyframes fadeIn{
+
+from{
+opacity:0;
+transform:translateY(-20px);
+}
+
+to{
+opacity:1;
+transform:translateY(0);
+}
+
+}
+
+.login-container h2{
+
+margin-bottom:25px;
+color:#333;
+
+}
+
+.input-group{
+
+position:relative;
+margin-bottom:20px;
+
+}
+
+.input-group input{
+
 width:100%;
-padding:12px;
-margin:10px 0;
-border-radius:6px;
+padding:12px 40px;
+border-radius:8px;
 border:1px solid #ccc;
+outline:none;
+font-size:15px;
+
+}
+
+.input-group i{
+
+position:absolute;
+top:12px;
+left:12px;
+color:#888;
+
 }
 
 button{
+
 width:100%;
 padding:12px;
-background:#2575fc;
-color:white;
 border:none;
-border-radius:6px;
+border-radius:8px;
+background:#667eea;
+color:white;
 font-size:16px;
+cursor:pointer;
+transition:0.3s;
+
 }
 
 button:hover{
-background:#1a5edb;
+
+background:#5563d1;
+
+}
+
+.footer{
+
+margin-top:15px;
+font-size:13px;
+color:#777;
+
 }
 
 </style>
@@ -53,20 +121,31 @@ background:#1a5edb;
 
 <body>
 
-<div class="login-box">
+<div class="login-container">
 
-    <h2>Student Registration</h2>
+<h2>Student Registration</h2>
 
-    <form action='/register' method="POST">
+<form action="/register" method="POST">
 
-        <input type="text" name="regno" placeholder="Registration Number" required><br>
-        <input type="password" name="password" placeholder="Password" required><br><br>
+<div class="input-group">
+<i class="fa fa-user"></i>
+<input type="text" name="regno" placeholder="Registration Number" required>
+</div>
 
-        <button type="submit">Register</button>
-        <p>Already have an account? </p>
-        <a href="/student_login" style="display:block;margin-top:15px;color:#2575fc;text-decoration:none;">Login</a>
+<div class="input-group">
+<i class="fa fa-lock"></i>
+<input type="password" name="password" placeholder="Password" required>
+</div>
 
-    </form>
+<button type="submit">Register</button><br><br>
+<p>Already have an account? </p>
+<a href="/student_login" method="GET" style="display:block;margin-top:15px;color:#667eea;text-decoration:none;">Login</a>
+
+</form>
+
+<div class="footer">
+YuvaExam Management System
+</div>
 
 </div>
 

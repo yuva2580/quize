@@ -2,8 +2,10 @@
 <html>
 <head>
 
-<title>view answer key</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Registration</title>
+
+
+
 <style>
 
 *{
@@ -121,23 +123,37 @@ color:#777;
 
 <div class="login-container">
 
-<h2>Answer Key</h2>
+<h2>Admin Registration</h2>
 
-<form  method="POST">
+<form action="/admin_register" method="POST">
 
 <div class="input-group">
 <i class="fa fa-user"></i>
-<input type="text" name="regno" placeholder="Enter your Reg Number" required>
+<input type="text" name="username" placeholder="Username" required>
 </div>
 
-<button type="submit">View Answer Key</button><br><br>
+<div class="input-group">
+<i class="fa fa-envelope"></i>
+<input type="email" name="email" placeholder="Email" required>
+</div>
+
+<div class="input-group">
+<i class="fa fa-lock"></i>
+<input type="password" name="password" placeholder="Password" required>
+</div>
+
+<button type="submit">Register</button><br><br>
+<p>Already have an account? </p>
+        <a href="/admin_login" style="display:block;margin-top:15px;color:#2575fc;text-decoration:none;">Login</a>
+
 
 </form>
 
-<p style="color:red;">{{error}}</p>
+<div class="footer">
+YuvaExam Management System
+</div>
 
 </div>
 
 </body>
 </html>
-

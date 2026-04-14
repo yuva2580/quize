@@ -2,7 +2,7 @@
 <html>
 <head>
 
-<title>view answer key</title>
+<title>verify admin otp</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 
@@ -111,6 +111,7 @@ margin-top:15px;
 font-size:13px;
 color:#777;
 
+
 }
 
 </style>
@@ -121,23 +122,50 @@ color:#777;
 
 <div class="login-container">
 
-<h2>Answer Key</h2>
+<h2>Verify OTP</h2>
 
-<form  method="POST">
+<form action="/verify_admin_otp" method="POST">
 
 <div class="input-group">
 <i class="fa fa-user"></i>
-<input type="text" name="regno" placeholder="Enter your Reg Number" required>
+<input type="text" name="otp" placeholder="Enter your OTP" required>
 </div>
 
-<button type="submit">View Answer Key</button><br><br>
+<button type="submit">Verify OTP</button><br><br>
+<a id="resendbtn" href="#" onclick="resendOTP()" style="text-decoration: none;">Resend OTP</a>
 
 </form>
 
-<p style="color:red;">{{error}}</p>
+<div class="footer">
+YuvaExam Management System
+</div>
 
 </div>
+<script>
+function resendOTP(){
+    window.location.href='/resend_otp';
+}
+let btn = document.getElementById('resendbtn');
+let time = 60;
+
+btn.disabled = true;
+
+let timer = setInterval(()=>{
+    btn.innerText = `Resend OTP in ${time--}s`;
+    time--;
+
+    if(time < 0){
+        clearInterval(timer);
+        btn.innerText = 'Resend OTP';
+        btn.disabled = false;
+    }
+},1000);
+function resendOTP(){
+    window.location.href='/resend_otp';
+}
+</script>
 
 </body>
 </html>
+
 
