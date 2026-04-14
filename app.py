@@ -938,8 +938,4 @@ def add_header(response):
 
 
 if __name__=="__main__":
-<<<<<<< HEAD
     init_db()
-=======
-    init_db()
->>>>>>> 9d0b51f (update code)
