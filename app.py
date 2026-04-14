@@ -14,11 +14,11 @@ app = Flask(__name__)
 app.secret_key = "Yuvaquiz"
 
 def get_db():
-    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
+    conn = psycopg2.connect(os.getenv("DATABASE_URL"))
     return conn
 
 def send_otp_email(receiver_email, otp):
-    sender_email =os.environ.get("EMAIL_USER")
+    sender_email = os.environ.get("EMAIL_USER")
     app_password = os.environ.get("EMAIL_PASS")
 
     subject = "Your OTP for Admin Registration"
@@ -30,15 +30,16 @@ def send_otp_email(receiver_email, otp):
     msg['To'] = receiver_email
 
     try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
         server.starttls()
         server.login(sender_email, app_password)
         server.sendmail(sender_email, receiver_email, msg.as_string())
         server.quit()
         print("OTP email sent successfully")
-
+        return True
     except Exception as e:
         print("Failed to send OTP email:", str(e))
+        return False
 
 
 def init_db():
@@ -333,9 +334,16 @@ def admin_register():
         conn.commit()
         conn.close()
 
-        send_otp_email(email,otp)
+        email_sent=send_otp_email(email,otp)
+        if not email_sent:
+            return """
+            <script>
+            alert('OTP Sends fail. Please try again.');
+            window.location.href='/admin_register';
+            </script>
+            """
+        
         hashed_password = generate_password_hash(password)
-
         session['pending_admin'] ={
             "username": username,
             "email": email,
@@ -432,7 +440,7 @@ def admin_login():
         else:
             return """
             <script>
-            aleert('Invalid login or account not verified');
+            alert('Invalid login or account not verified');
             window.location.href='/admin_login';
             </script>
             """
