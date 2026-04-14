@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = "Yuvaquiz"
 
 def get_db():
-    conn = psycopg2.connect(os.environ.get("DATABASE_URL")
+    conn = psycopg2.connect(os.environ.get("DATABASE_URL"))
     return conn
 
 def init_db():
